@@ -49,44 +49,6 @@ func NameQuery(r string) ([]Book, error) {
     return bks, nil
 }
 
-// Query for books by Author. This function contains a SQL Injection issue.
-// The user input is not parameterized. Instead of using fmt.Sprintf() to build
-// the query, you should be using a parameterized query.
-// func AuthorQuery(r string) ([]Book, error) {
-//     // Fix: rows, err := DB.Query("SELECT * FROM books WHERE author = ?", r)
-//     rows, err := DB.Query(fmt.Sprintf("SELECT * FROM books WHERE author = '%s'", r))
-//     if err != nil {
-//         return nil, err
-//     }
-//     defer rows.Close()
-
-//     bks, err := makeBookSlice(rows)
-//     if err != nil {
-//         return nil, err
-//     }
-
-//     return bks, nil
-// }
-
-// Query for books by read.  This function contains a SQL Injection issue.
-// The user input is not parameterized. Instead of using fmt.Sprintf() to build
-// the query, you should be using a parameterized query.
-// func ReadQuery(r string) ([]Book, error) {
-//     // Fix: rows, err := DB.Query("SELECT * FROM books WHERE read = ?", r)
-//     rows, err := DB.Query(fmt.Sprintf("SELECT * FROM books WHERE read = '%s'", r))
-//     if err != nil {
-//         return nil, err
-//     }
-//     defer rows.Close()
-
-//     bks, err := makeBookSlice(rows)
-//     if err != nil {
-//         return nil, err
-//     }
-
-//     return bks, nil
-// }
-
 // A helper function to cast the query results to a slice
 func makeBookSlice(r *sql.Rows) ([]Book, error) {
     var bks []Book
