@@ -10,6 +10,8 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"fmt"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"log"
 	"net/http"
 )
@@ -59,3 +61,34 @@ func generateRSAKey() {
 // - Avoid generating RSA keys with less than 2048 bits to comply with modern security standards.
 // - Keys of insufficient strength (e.g., 1024 bits) are deprecated by NIST and may soon be vulnerable due to advances in computing power.
 // - Always validate the generated key size and store it securely.
+
+func connectToSSH() {
+	// Configure known host callback to validate SSH host keys
+	knownHostCallback, err := knownhosts.New("/home/user/.ssh/known_hosts")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create SSH client config with secure host key verification
+	config := &ssh.ClientConfig{
+		User: "username",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("password"),
+		},
+		HostKeyCallback: knownHostCallback,
+	}
+
+	// Connect to the SSH server
+	conn, err := ssh.Dial("tcp", "localhost:22", config)
+	if err != nil {
+		log.Fatal("Unable to connect: ", err)
+	}
+	defer conn.Close()
+
+	fmt.Println("Successfully connected to the SSH server.")
+}
+
+// Notes for Secure SSH Connections:
+// - Always use a known hosts file to validate SSH host keys.
+// - Avoid setting HostKeyCallback to ssh.InsecureIgnoreHostKey, as it disables host key validation.
+// - Use the "golang.org/x/crypto/ssh/knownhosts" package to securely parse and verify host keys.
