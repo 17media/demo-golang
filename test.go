@@ -31,24 +31,6 @@ func main() {
 		MinVersion: tls.VersionTLS13,
 	}
 
-	// Configure the HTTP server to use the TLS configuration
-	httpServer := &http.Server{
-		Addr:      "127.0.0.1:8443", // Avoid binding to all interfaces
-		TLSConfig: tlsConfig,
-	}
-
-	// Define a simple handler for testing purposes
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, TLS 1.3!")
-	})
-
-	fmt.Println("Starting server on https://127.0.0.1:8443")
-
-	// Start the server with TLS
-	err = httpServer.ListenAndServeTLS("server.crt", "server.key")
-	if err != nil {
-		fmt.Printf("Server failed: %s\n", err)
-	}
 }
 
 // Issues:
