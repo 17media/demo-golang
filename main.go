@@ -1,104 +1,94 @@
+// go_crypto_rule_tlsversion.go
+
+// This Go file demonstrates best practices for enforcing TLS 1.3
+// in a Go server, ensuring compliance with modern security standards.
+
 package main
 
 import (
-	"database/sql"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
 	"fmt"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"log"
 	"net/http"
-	"os"
-
-	"github.com/octodemo/advanced-security-go/models"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	var err error
+	// Create a custom TLS configuration enforcing TLS 1.3
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS13,
+	}
 
-	os.Remove("./bookstore.db")
+	// Configure the HTTP server to use the TLS configuration
+	httpServer := &http.Server{
+		Addr:      ":8443",
+		TLSConfig: tlsConfig,
+	}
 
-	models.DB, err = sql.Open("sqlite3", "./bookstore.db")
+	// Define a simple handler for testing purposes
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, TLS 1.3!")
+	})
+
+	fmt.Println("Starting server on https://localhost:8443")
+
+	// Start the server with TLS
+	err := httpServer.ListenAndServeTLS("server.crt", "server.key")
+	if err != nil {
+		fmt.Printf("Server failed: %s\n", err)
+	}
+}
+
+// Notes:
+// - Ensure you have valid "server.crt" and "server.key" files.
+// - Always prefer using TLS 1.3 to enforce modern cryptographic standards.
+// - Deprecated versions like TLS 1.0 and TLS 1.1 should be avoided to prevent vulnerabilities.
+
+func generateRSAKey() {
+	// Generate an RSA key with a minimum recommended size of 2048 bits
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer models.DB.Close()
 
-	sqlStmt := `
-	CREATE TABLE books (
-		name varchar(255) NOT NULL,
-		author varchar(255) NOT NULL,
-		read varchar(255) NOT NULL
-	);
+	fmt.Printf("Generated RSA Key with %d bits\n", key.Size()*8)
+}
 
-	INSERT INTO books (name, author, read) VALUES
-	("The Hobbit", "JRR Tolkien", "True"),
-	("The Fellowship of the Ring", "JRR Tolkien", "True"),
-	("The Eye of the World", "Robert Jordan", "False"),
-	("A Game of Thrones", "George R. R. Martin", "True"),
-	("The Way of Kings", "Brandon Sanderson", "False");
-	`
-	_, err = models.DB.Exec(sqlStmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
-	}
+// Notes for RSA Key Strength:
+// - Avoid generating RSA keys with less than 2048 bits to comply with modern security standards.
+// - Keys of insufficient strength (e.g., 1024 bits) are deprecated by NIST and may soon be vulnerable due to advances in computing power.
+// - Always validate the generated key size and store it securely.
 
-	_, err = models.DB.Begin()
+func connectToSSH() {
+	// Configure known host callback to validate SSH host keys
+	knownHostCallback, err := knownhosts.New("/home/user/.ssh/known_hosts")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/books", handler)
-	http.ListenAndServe(":3000", nil)
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
-	author := r.URL.Query().Get("author")
-	read := r.URL.Query().Get("read")
-
-	if len(name) > 0 {
-		bks, err := models.NameQuery(name)
-		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-
-		for _, bk := range bks {
-			fmt.Fprintf(w, "%s, %s, %s\n", bk.Title, bk.Author, bk.Read)
-		}
-
-	} else if len(author) > 0 {
-		bks, err := models.AuthorQuery(author)
-		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-
-		for _, bk := range bks {
-			fmt.Fprintf(w, "%s, %s, %s\n", bk.Title, bk.Author, bk.Read)
-		}
-
-	} else if len(read) > 0 {
-		bks, err := models.ReadQuery(read)
-		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-
-		for _, bk := range bks {
-			fmt.Fprintf(w, "%s, %s, %s\n", bk.Title, bk.Author, bk.Read)
-		}
-
-	} else {
-		bks, err := models.AllBooks()
-		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-
-		for _, bk := range bks {
-			fmt.Fprintf(w, "%s, %s, %s\n", bk.Title, bk.Author, bk.Read)
-		}
+	// Create SSH client config with secure host key verification
+	config := &ssh.ClientConfig{
+		User: "username",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("password"),
+		},
+		HostKeyCallback: knownHostCallback,
 	}
+
+	// Connect to the SSH server
+	conn, err := ssh.Dial("tcp", "localhost:22", config)
+	if err != nil {
+		log.Fatal("Unable to connect: ", err)
+	}
+	defer conn.Close()
+
+	fmt.Println("Successfully connected to the SSH server.")
 }
+
+// Notes for Secure SSH Connections:
+// - Always use a known hosts file to validate SSH host keys.
+// - Avoid setting HostKeyCallback to ssh.InsecureIgnoreHostKey, as it disables host key validation.
+// - Use the "golang.org/x/crypto/ssh/knownhosts" package to securely parse and verify host keys.
