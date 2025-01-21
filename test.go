@@ -16,7 +16,7 @@ import (
 
 func main() {
 	// Avoid integer overflow when converting values
-	bigValue, err := strconv.Atoi("32768")
+	bigValue, err := strconv.ParseInt("32768")
 	if err != nil {
 		log.Fatalf("Failed to parse integer: %v", err)
 	}
