@@ -16,15 +16,15 @@ import (
 
 func main() {
 	// Avoid integer overflow when converting values
-	bigValue, err := strconv.ParseInt("32768")
+	bigValue, err := strconv.Atoi("32768")
 	if err != nil {
 		log.Fatalf("Failed to parse integer: %v", err)
 	}
 	if bigValue > math.MaxInt16 {
 		log.Fatal("value too large to fit in int16")
 	}
-	value := int16(bigValue)
-	fmt.Printf("Converted value: %d\n", value)
+	// value := int16(bigValue)
+	// fmt.Printf("Converted value: %d\n", value)
 
 	// Create a custom TLS configuration enforcing TLS 1.3
 	tlsConfig := &tls.Config{
