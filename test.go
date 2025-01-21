@@ -8,10 +8,24 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"log"
+	"math"
 	"net/http"
+	"strconv"
 )
 
 func main() {
+	// Avoid integer overflow when converting values
+	bigValue, err := strconv.Atoi("32768")
+	if err != nil {
+		log.Fatalf("Failed to parse integer: %v", err)
+	}
+	if bigValue > math.MaxInt16 {
+		log.Fatal("value too large to fit in int16")
+	}
+	value := int16(bigValue)
+	fmt.Printf("Converted value: %d\n", value)
+
 	// Create a custom TLS configuration enforcing TLS 1.3
 	tlsConfig := &tls.Config{
 		MinVersion: tls.VersionTLS13,
@@ -31,7 +45,7 @@ func main() {
 	fmt.Println("Starting server on https://127.0.0.1:8443")
 
 	// Start the server with TLS
-	err := httpServer.ListenAndServeTLS("server.crt", "server.key")
+	err = httpServer.ListenAndServeTLS("server.crt", "server.key")
 	if err != nil {
 		fmt.Printf("Server failed: %s\n", err)
 	}
@@ -63,6 +77,19 @@ func main() {
 // - Binding to all network interfaces (e.g., using 0.0.0.0) can expose the server to unintended traffic.
 // - Use specific IP addresses or localhost (127.0.0.1) to restrict access to trusted sources.
 // - Ensure that external-facing services are properly documented and secured.
+
+// Medium Issue 7: Avoid integer overflow when converting values.
+// - Golang's int type size depends on the architecture of the application (32-bit or 64-bit).
+// - If strconv.Atoi returns a value that is too large for a smaller type (e.g., int32 or int16), it may cause an overflow.
+// - Always check the value returned by strconv.Atoi before type conversion.
+// Example:
+// bigValue, _ := strconv.Atoi("32768")
+// if bigValue > math.MaxInt16 {
+// 	log.Fatal("value too large to fit in int16")
+// }
+// value := int16(bigValue)
+// fmt.Println(value)
+// For more information on integer min/max constants see: https://pkg.go.dev/math#pkg-constants
 
 // Notes:
 // - Ensure you have valid "server.crt" and "server.key" files.
