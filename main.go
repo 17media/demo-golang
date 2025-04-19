@@ -1,104 +1,70 @@
+// go_crypto_rule_tlsversion.go
+
+// This Go file demonstrates best practices for enforcing TLS 1.3
+// in a Go server, ensuring compliance with modern security standards.
+
 package main
 
 import (
-	"database/sql"
+	"crypto/tls"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
-
-	"github.com/octodemo/advanced-security-go/models"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	var err error
-
-	os.Remove("./bookstore.db")
-
-	models.DB, err = sql.Open("sqlite3", "./bookstore.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer models.DB.Close()
-
-	sqlStmt := `
-	CREATE TABLE books (
-		name varchar(255) NOT NULL,
-		author varchar(255) NOT NULL,
-		read varchar(255) NOT NULL
-	);
-
-	INSERT INTO books (name, author, read) VALUES
-	("The Hobbit", "JRR Tolkien", "True"),
-	("The Fellowship of the Ring", "JRR Tolkien", "True"),
-	("The Eye of the World", "Robert Jordan", "False"),
-	("A Game of Thrones", "George R. R. Martin", "True"),
-	("The Way of Kings", "Brandon Sanderson", "False");
-	`
-	_, err = models.DB.Exec(sqlStmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
+	// Create a custom TLS configuration enforcing TLS 1.3
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS13,
 	}
 
-	_, err = models.DB.Begin()
-	if err != nil {
-		log.Fatal(err)
+	// Configure the HTTP server to use the TLS configuration
+	httpServer := &http.Server{
+		Addr:      "127.0.0.1:8443", // Avoid binding to all interfaces
+		TLSConfig: tlsConfig,
 	}
 
-	http.HandleFunc("/books", handler)
-	http.ListenAndServe(":3000", nil)
+	// Define a simple handler for testing purposes
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, TLS 1.3!")
+	})
+
+	fmt.Println("Starting server on https://127.0.0.1:8443")
+
+	// Start the server with TLS
+	err := httpServer.ListenAndServeTLS("server.crt", "server.key")
+	if err != nil {
+		fmt.Printf("Server failed: %s\n", err)
+	}
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
-	author := r.URL.Query().Get("author")
-	read := r.URL.Query().Get("read")
+// Issues:
+// Medium Issue 1: Validate certificates correctly to prevent potential man-in-the-middle attacks.
+// - Ensure the server certificate is signed by a trusted Certificate Authority (CA).
+// - Use tls.Config's VerifyPeerCertificate callback to add custom validation logic if needed.
 
-	if len(name) > 0 {
-		bks, err := models.NameQuery(name)
-		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
+// Medium Issue 2: Use secure file permissions for private key and certificate files.
+// - "server.crt" and "server.key" files must be accessible only by the application user.
+// - Example: Set file permissions to 600 (rw-------).
 
-		for _, bk := range bks {
-			fmt.Fprintf(w, "%s, %s, %s\n", bk.Title, bk.Author, bk.Read)
-		}
+// Medium Issue 3: Enable HTTP/2 explicitly to improve performance and security.
+// - The default Go HTTP server supports HTTP/2 when TLS is enabled.
+// - Verify that HTTP/2 is functioning correctly for optimal performance.
 
-	} else if len(author) > 0 {
-		bks, err := models.AuthorQuery(author)
-		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
+// Medium Issue 4: Implement proper logging for TLS handshake errors.
+// - Monitor and log TLS handshake errors to identify potential misconfigurations or attacks.
+// - Use custom error handlers to capture and analyze handshake issues.
 
-		for _, bk := range bks {
-			fmt.Fprintf(w, "%s, %s, %s\n", bk.Title, bk.Author, bk.Read)
-		}
+// Medium Issue 5: Avoid usage of insecure template types.
+// - Usage of insecure template types (e.g., text/template) can introduce vulnerabilities if templates are not properly sanitized.
+// - Prefer html/template for rendering templates to prevent injection attacks.
+// - See documentation for secure template usage: https://golang.org/pkg/html/template/#HTML
 
-	} else if len(read) > 0 {
-		bks, err := models.ReadQuery(read)
-		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
+// Medium Issue 6: Avoid binding to all network interfaces.
+// - Binding to all network interfaces (e.g., using 0.0.0.0) can expose the server to unintended traffic.
+// - Use specific IP addresses or localhost (127.0.0.1) to restrict access to trusted sources.
+// - Ensure that external-facing services are properly documented and secured.
 
-		for _, bk := range bks {
-			fmt.Fprintf(w, "%s, %s, %s\n", bk.Title, bk.Author, bk.Read)
-		}
-
-	} else {
-		bks, err := models.AllBooks()
-		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-
-		for _, bk := range bks {
-			fmt.Fprintf(w, "%s, %s, %s\n", bk.Title, bk.Author, bk.Read)
-		}
-	}
-}
+// Notes:
+// - Ensure you have valid "server.crt" and "server.key" files.
+// - Always prefer using TLS 1.3 to enforce modern cryptographic standards.
+// - Deprecated versions like TLS 1.0 and TLS 1.1 should be avoided to prevent vulnerabilities.
