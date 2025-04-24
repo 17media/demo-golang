@@ -4,6 +4,7 @@ import "fmt"
 
 // Function with high cyclomatic complexity (4)
 func complexFunction(a, b, c int) int {
+    // #lizard forgives
     if a > 10 {
         if b > 5 {
             return a + b
