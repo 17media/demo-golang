@@ -1,3 +1,4 @@
+// #lizard forgive global
 package main
 
 import (
