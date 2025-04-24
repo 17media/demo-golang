@@ -61,7 +61,26 @@ func calculateComplexity(a, b, c int) int {
     return result
 }
 
+// Function with high cyclomatic complexity (4)
+func complexFunctionCopy(a, b, c int) int {
+    // #lizard forgives
+    if a > 10 {
+        if b > 5 {
+            return a + b
+        } else {
+            return a - b
+        }
+    } else {
+        if c < 5 {
+            return b * c
+        } else {
+            return b / c
+        }
+    }
+}
+
 func main() {
     result := calculateComplexity(12, 6, 4)
+    fmt.Println(complexFunctionCopy(8, 2, 6))
     fmt.Println("The result is:", result)
 }
