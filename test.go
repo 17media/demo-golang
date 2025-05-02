@@ -1,5 +1,4 @@
 // #lizard forgive global
-// [SRE-9183]
 package main
 
 import (
