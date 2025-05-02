@@ -1,3 +1,4 @@
+// [SRE-9183]
 // #lizard forgive global
 package main
 
@@ -63,7 +64,6 @@ func calculateComplexity(a, b, c int) int {
 
 // Function with high cyclomatic complexity (4)
 func complexFunctionCopy(a, b, c int) int {
-    // #lizard forgives
     if a > 10 {
         if b > 5 {
             return a + b
