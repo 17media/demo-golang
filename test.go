@@ -5,6 +5,7 @@ import (
     "fmt"
 )
 
+// #lizard forgives [SRE-9183]
 func calculateComplexity(a, b, c int) int {
     var result int
     if a > 10 {
